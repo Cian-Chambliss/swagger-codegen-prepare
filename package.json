@@ -1,0 +1,18 @@
+{
+    "name": "swagger-codegen-prepare",
+    "version": "0.0.1",
+    "dependencies": {
+        "lodash": "^4.15.0"
+    },
+    "description": "Module to prepare swagger object for template engine",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "swagger",
+        "codegen"
+    ],
+    "author": "Cian Chambliss",
+    "license": "Apache-2.0"
+}
