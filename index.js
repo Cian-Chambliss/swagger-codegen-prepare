@@ -37,6 +37,7 @@ var getViewForSwagger2 = function(opts) {
         methods: [],
         definitions: []
     };
+    var lastPath = null;
 
     _.forEach(swagger.paths, function(api, path) {
         var globalParams = [];
@@ -185,6 +186,10 @@ var getViewForSwagger2 = function(opts) {
                     method.return = opts.defaultType;
                 }
             }
+            if (lastPath !== method.path) {
+                lastPath = method.path;
+                method.isFirstPath = true;
+            }
             data.methods.push(method);
         });
     });
@@ -224,6 +229,7 @@ var getViewForSwagger1 = function(opts) {
         domain: swagger.basePath ? swagger.basePath : '',
         methods: []
     };
+    var lastPath = null;
     swagger.apis.forEach(function(api) {
         api.operations.forEach(function(op) {
             if (op.method === 'OPTIONS') {
@@ -272,6 +278,11 @@ var getViewForSwagger1 = function(opts) {
                     parameter.isFormParameter = true;
                 }
             });
+            if (lastPath !== method.path) {
+                lastPath = method.path;
+            } else {
+                method.isFirstPath = true;
+            }
             data.methods.push(method);
         });
     });
