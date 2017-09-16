@@ -163,6 +163,9 @@ var getViewForSwagger2 = function(opts) {
                 }
                 parameter.tsType = ts.convertType(parameter);
                 parameter.cardinality = parameter.required ? '' : '?';
+                if (method.parameters.length !== 0) {
+                    parameter.notFirstParameter = true;
+                }
                 method.parameters.push(parameter);
             });
             data.methods.push(method);
