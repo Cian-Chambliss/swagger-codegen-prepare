@@ -190,18 +190,24 @@ var getViewForSwagger2 = function(opts) {
     });
 
     _.forEach(swagger.definitions, function(definition, name) {
-        if (opts.convertType) {
-            data.definitions.push({
-                name: name,
-                description: definition.description,
-                __type: opts.convertType(definition, swagger)
+        var newDef = {
+            name: name,
+            description: definition.description
+        };
+        if (definition.properties) {
+            var props = [];
+            _.forEach(definition.properties, function(propertyType, propertyName) {
+                var newProp = { name: propertyName, definition: propertyType };
+                newProp.__type = opts.convertType(propertyType);
+                props.push(newProp);
             });
-        } else {
-            data.definitions.push({
-                name: name,
-                description: definition.description,
-            });
+            newDef.properties = props;
+            newDef.hasProperties = true;
         }
+        if (opts.convertType) {
+            newDef.__type = opts.convertType(definition, swagger);
+        }
+        data.definitions.push(newDef);
     });
 
     return data;
