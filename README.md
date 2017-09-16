@@ -30,6 +30,33 @@ var template = Handlebars.compile(source);
 var result = template(data);
 console.log(result);
 ```
+
+Output of the above code for the petstore example.
+
+```
+PetStore
+  - addPet : Add a new pet to the store
+  - updatePet : Update an existing pet
+  - findPetsByStatus : Multiple status values can be provided with comma separated strings
+  - findPetsByTags : Muliple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+  - getPetById : Returns a single pet
+  - updatePetWithForm : Updates a pet in the store with form data
+  - deletePet : Deletes a pet
+  - uploadFile : uploads an image
+  - getInventory : Returns a map of status codes to quantities
+  - placeOrder : Place an order for a pet
+  - getOrderById : For valid response try integer IDs with value &gt;&#x3D; 1 and &lt;&#x3D; 10. Other values will generated exceptions
+  - deleteOrder : For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+  - createUser : This can only be done by the logged in user.
+  - createUsersWithArrayInput : Creates list of users with given input array
+  - createUsersWithListInput : Creates list of users with given input array
+  - loginUser : Logs user into the system
+  - logoutUser : Logs out current logged in user session
+  - getUserByName : Get user by user name
+  - updateUser : This can only be done by the logged in user.
+  - deleteUser : This can only be done by the logged in user.
+```
+
 ## Example Code Generator
 
 Example using the optional 'convertType' method and 'defaultType' parameter.
