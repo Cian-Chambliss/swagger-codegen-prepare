@@ -13,6 +13,9 @@
         "swagger",
         "codegen"
     ],
-    "author": "Cian Chambliss",
+    "author": {
+        "name": "Cian Chambliss",
+        "email": "cian@alphasoftware.com"
+    },
     "license": "Apache-2.0"
 }
