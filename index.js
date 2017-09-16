@@ -198,7 +198,9 @@ var getViewForSwagger2 = function(opts) {
             var props = [];
             _.forEach(definition.properties, function(propertyType, propertyName) {
                 var newProp = { name: propertyName, definition: propertyType };
-                newProp.__type = opts.convertType(propertyType);
+                if (opts.convertType) {
+                    newProp.__type = opts.convertType(propertyType);
+                }
                 props.push(newProp);
             });
             newDef.properties = props;
