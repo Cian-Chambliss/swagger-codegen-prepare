@@ -1,5 +1,4 @@
 var _ = require('lodash');
-var ts = require('./typescript');
 
 var normalizeName = function(id) {
     return id.replace(/\.|\-|\{|\}/g, '_');
@@ -161,23 +160,48 @@ var getViewForSwagger2 = function(opts) {
                 } else if (parameter.in === 'formData') {
                     parameter.isFormParameter = true;
                 }
-                parameter.tsType = ts.convertType(parameter);
+                if (opts.convertType) {
+                    parameter.__type = opts.convertType(parameter);
+                }
                 parameter.cardinality = parameter.required ? '' : '?';
                 if (method.parameters.length !== 0) {
                     parameter.notFirstParameter = true;
                 }
                 method.parameters.push(parameter);
             });
+            if (op.responses) {
+                _.forEach(op.responses, function(response, r) {
+                    var rVal = parseInt(r);
+                    if (0 < rVal && rVal < 400) {
+                        if (response.schema && !method.returnType) {
+                            method.return = response.schema;
+                            if (opts.convertType) {
+                                method.return.__type = opts.convertType(response.schema);
+                            }
+                        }
+                    }
+                });
+                if (!method.returnType && opts.defaultType) {
+                    method.return = opts.defaultType;
+                }
+            }
             data.methods.push(method);
         });
     });
 
     _.forEach(swagger.definitions, function(definition, name) {
-        data.definitions.push({
-            name: name,
-            description: definition.description,
-            tsType: ts.convertType(definition, swagger)
-        });
+        if (opts.convertType) {
+            data.definitions.push({
+                name: name,
+                description: definition.description,
+                __type: opts.convertType(definition, swagger)
+            });
+        } else {
+            data.definitions.push({
+                name: name,
+                description: definition.description,
+            });
+        }
     });
 
     return data;
