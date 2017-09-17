@@ -171,8 +171,11 @@ var getViewForSwagger2 = function(opts) {
                 method.parameters.push(parameter);
             });
             if (op.responses) {
+                method.responses = [];
                 _.forEach(op.responses, function(response, r) {
                     var rVal = parseInt(r);
+                    response.responseCode = r;
+                    method.hasResponses = true;
                     if (0 < rVal && rVal < 400) {
                         if (response.schema && !method.returnType) {
                             method.return = response.schema;
@@ -181,6 +184,7 @@ var getViewForSwagger2 = function(opts) {
                             }
                         }
                     }
+                    method.responses.push(response);
                 });
                 if (!method.returnType && opts.defaultType) {
                     method.return = opts.defaultType;
