@@ -27,17 +27,54 @@ var getViewForSwagger2 = function(opts) {
     var swagger = opts.swagger;
     var methods = [];
     var authorizedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'COPY', 'HEAD', 'OPTIONS', 'LINK', 'UNLIK', 'PURGE', 'LOCK', 'UNLOCK', 'PROPFIND'];
+    var hasTags = false;
+    var byTags = null;
+    if (swagger.tags) {
+        hasTags = true;
+        byTags = [];
+    }
     var data = {
         description: swagger.info.description,
+        info: swagger.info,
+        host: swagger.host,
+        basePath: swagger.basePath,
+        hasTags: hasTags,
+        tags: swagger.tags,
+        schemes: swagger.schemes,
         isSecure: swagger.securityDefinitions !== undefined,
         moduleName: opts.moduleName,
         className: opts.className,
         imports: opts.imports,
         domain: (swagger.schemes && swagger.schemes.length > 0 && swagger.host && swagger.basePath) ? swagger.schemes[0] + '://' + swagger.host + swagger.basePath.replace(/\/+$/g, '') : '',
         methods: [],
+        byTags: byTags,
         definitions: []
     };
     var lastPath = null;
+
+    _.forEach(swagger.definitions, function(definition, name) {
+        var newDef = {
+            name: name,
+            description: definition.description
+        };
+        if (definition.properties) {
+            var props = [];
+            _.forEach(definition.properties, function(propertyType, propertyName) {
+                var newProp = { name: propertyName, definition: propertyType };
+                if (opts.convertType) {
+                    newProp[opts.typePropertyName] = opts.convertType(propertyType, swagger, opts);
+                }
+                props.push(newProp);
+            });
+            newDef.properties = props;
+            newDef.hasProperties = true;
+        }
+        if (opts.convertType) {
+            newDef[opts.typePropertyName] = opts.convertType(definition, swagger, opts);
+        }
+        data.definitions.push(newDef);
+    });
+
 
     _.forEach(swagger.paths, function(api, path) {
         var globalParams = [];
@@ -82,15 +119,21 @@ var getViewForSwagger2 = function(opts) {
                 }
             }
             methods.push(methodName);
-
+            var tagGroup = "none";
+            if (op.tags) {
+                tagGroup = op.tags.join(",");
+            }
             var method = {
                 path: path,
                 className: opts.className,
                 methodName: methodName,
+                tags: op.tags,
+                tagGroup: tagGroup,
                 method: M,
                 isGET: M === 'GET',
                 isPOST: M === 'POST',
                 summary: op.description || op.summary,
+                description: op.description,
                 externalDocs: op.externalDocs,
                 isSecure: swagger.security !== undefined || op.security !== undefined,
                 isSecureToken: secureTypes.indexOf('oauth2') !== -1,
@@ -99,6 +142,12 @@ var getViewForSwagger2 = function(opts) {
                 parameters: [],
                 headers: []
             };
+            if (op.produces) {
+                method.produces = op.produces;
+            }
+            if (op.consumes) {
+                method.consumes = op.consumes;
+            }
             if (method.isSecure && method.isSecureToken) {
                 data.isSecureToken = method.isSecureToken;
             }
@@ -162,7 +211,7 @@ var getViewForSwagger2 = function(opts) {
                     parameter.isFormParameter = true;
                 }
                 if (opts.convertType) {
-                    parameter.__type = opts.convertType(parameter);
+                    parameter[opts.typePropertyName] = opts.convertType(parameter, swagger, opts);
                 }
                 parameter.cardinality = parameter.required ? '' : '?';
                 if (method.parameters.length !== 0) {
@@ -177,10 +226,11 @@ var getViewForSwagger2 = function(opts) {
                     response.responseCode = r;
                     method.hasResponses = true;
                     if (0 < rVal && rVal < 400) {
-                        if (response.schema && !method.returnType) {
-                            method.return = response.schema;
-                            if (opts.convertType) {
-                                method.return.__type = opts.convertType(response.schema);
+                        if (response.schema && opts.convertType) {
+                            var responseType = opts.convertType(response.schema, swagger, opts);
+                            response.schema[opts.typePropertyName] = responseType;
+                            if (!method.return) {
+                                method.return = response.schema;
                             }
                         }
                     }
@@ -195,30 +245,22 @@ var getViewForSwagger2 = function(opts) {
                 method.isFirstPath = true;
             }
             data.methods.push(method);
-        });
-    });
-
-    _.forEach(swagger.definitions, function(definition, name) {
-        var newDef = {
-            name: name,
-            description: definition.description
-        };
-        if (definition.properties) {
-            var props = [];
-            _.forEach(definition.properties, function(propertyType, propertyName) {
-                var newProp = { name: propertyName, definition: propertyType };
-                if (opts.convertType) {
-                    newProp.__type = opts.convertType(propertyType);
+            var index = _.findIndex(byTags, function(o) { return o.name === tagGroup; });
+            if (index >= 0) {
+                byTags[index].methods.push(method);
+            } else {
+                var tagGroups = [];
+                if (method.tags) {
+                    _.forEach(method.tags, function(tag) {
+                        var tagIndex = _.findIndex(swagger.tags, function(o) { return o.name === tag; });
+                        if (tagIndex >= 0) {
+                            tagGroups.push(swagger.tags[tagIndex]);
+                        }
+                    });
                 }
-                props.push(newProp);
-            });
-            newDef.properties = props;
-            newDef.hasProperties = true;
-        }
-        if (opts.convertType) {
-            newDef.__type = opts.convertType(definition, swagger);
-        }
-        data.definitions.push(newDef);
+                byTags.push({ name: tagGroup, tags: tagGroups, methods: [method] });
+            }
+        });
     });
 
     return data;
@@ -294,6 +336,9 @@ var getViewForSwagger1 = function(opts) {
 };
 
 exports.SwaggerPrepare = function(opts) {
+    if (!opts.typePropertyName) {
+        opts.typePropertyName = "__type";
+    }
     // For Swagger Specification version 2.0 value of field 'swagger' must be a string '2.0'
     return opts.swagger.swagger === '2.0' ? getViewForSwagger2(opts) : getViewForSwagger1(opts);
 };
