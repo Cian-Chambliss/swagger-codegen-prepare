@@ -140,6 +140,7 @@ var getViewForSwagger2 = function(opts) {
                 isSecureApiKey: secureTypes.indexOf('apiKey') !== -1,
                 isSecureBasic: secureTypes.indexOf('basic') !== -1,
                 parameters: [],
+                byIn: {},
                 headers: []
             };
             if (op.produces) {
@@ -163,11 +164,13 @@ var getViewForSwagger2 = function(opts) {
                     name: 'Accept',
                     value: "'${produces.map(function(value) { return value; }).join(', ')}'",
                 });
+                method.hasProduces = true;
             }
 
             var consumes = op.consumes || swagger.consumes;
             if (consumes) {
                 method.headers.push({ name: 'Content-Type', value: '\'' + consumes + '\'' });
+                method.hasConsumes = true;
             }
 
             var params = [];
@@ -218,6 +221,43 @@ var getViewForSwagger2 = function(opts) {
                     parameter.notFirstParameter = true;
                 }
                 method.parameters.push(parameter);
+                // Indexed by 'in'
+                if (parameter.in === 'body') {
+                    if (!method.byIn.body) {
+                        method.byIn.body = [parameter];
+                        method.byIn.hasBody = true;
+                    } else {
+                        method.byIn.body.push(parameter);
+                    }
+                } else if (parameter.in === 'path') {
+                    if (!method.byIn.path) {
+                        method.byIn.path = [parameter];
+                        method.byIn.hasPath = true;
+                    } else {
+                        method.byIn.path.push(parameter);
+                    }
+                } else if (parameter.in === 'query') {
+                    if (!method.byIn.query) {
+                        method.byIn.query = [parameter];
+                        method.byIn.hasQuery = true;
+                    } else {
+                        method.byIn.query.push(parameter);
+                    }
+                } else if (parameter.in === 'header') {
+                    if (!method.byIn.header) {
+                        method.byIn.header = [parameter];
+                        method.byIn.hasHeader = true;
+                    } else {
+                        method.byIn.header.push(parameter);
+                    }
+                } else if (parameter.in === 'formData') {
+                    if (!method.byIn.formData) {
+                        method.byIn.formData = [parameter];
+                        method.byIn.hasFormData = true;
+                    } else {
+                        method.byIn.formData.push(parameter);
+                    }
+                }
             });
             if (op.responses) {
                 method.responses = [];
@@ -245,20 +285,22 @@ var getViewForSwagger2 = function(opts) {
                 method.isFirstPath = true;
             }
             data.methods.push(method);
-            var index = _.findIndex(byTags, function(o) { return o.name === tagGroup; });
-            if (index >= 0) {
-                byTags[index].methods.push(method);
-            } else {
-                var tagGroups = [];
-                if (method.tags) {
-                    _.forEach(method.tags, function(tag) {
-                        var tagIndex = _.findIndex(swagger.tags, function(o) { return o.name === tag; });
-                        if (tagIndex >= 0) {
-                            tagGroups.push(swagger.tags[tagIndex]);
-                        }
-                    });
+            if (byTags) {
+                var index = _.findIndex(byTags, function(o) { return o.name === tagGroup; });
+                if (index >= 0) {
+                    byTags[index].methods.push(method);
+                } else {
+                    var tagGroups = [];
+                    if (method.tags) {
+                        _.forEach(method.tags, function(tag) {
+                            var tagIndex = _.findIndex(swagger.tags, function(o) { return o.name === tag; });
+                            if (tagIndex >= 0) {
+                                tagGroups.push(swagger.tags[tagIndex]);
+                            }
+                        });
+                    }
+                    byTags.push({ name: tagGroup, tags: tagGroups, methods: [method] });
                 }
-                byTags.push({ name: tagGroup, tags: tagGroups, methods: [method] });
             }
         });
     });
@@ -299,6 +341,7 @@ var getViewForSwagger1 = function(opts) {
                 headers.name = 'Accept';
                 headers.value.push(op.produces.map(function(value) { return '\'' + value + '\''; }).join(', '));
                 method.headers.push(headers);
+                method.hasProduces = true;
             }
 
             op.parameters = op.parameters ? op.parameters : [];
