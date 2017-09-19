@@ -23,10 +23,54 @@ var getPathToMethodName = function(opts, m, path) {
     return m.toLowerCase() + result[0].toUpperCase() + result.substring(1);
 };
 
+var sortParameterByIn = function(method, parameter) {
+    if (parameter.in === 'body') {
+        if (!method.byIn.body) {
+            method.byIn.body = [parameter];
+            method.byIn.hasBody = true;
+        } else {
+            parameter.notFirstByIn = true;
+            method.byIn.body.push(parameter);
+        }
+    } else if (parameter.in === 'path') {
+        if (!method.byIn.path) {
+            method.byIn.path = [parameter];
+            method.byIn.hasPath = true;
+        } else {
+            parameter.notFirstByIn = true;
+            method.byIn.path.push(parameter);
+        }
+    } else if (parameter.in === 'query') {
+        if (!method.byIn.query) {
+            method.byIn.query = [parameter];
+            method.byIn.hasQuery = true;
+        } else {
+            parameter.notFirstByIn = true;
+            method.byIn.query.push(parameter);
+        }
+    } else if (parameter.in === 'header') {
+        if (!method.byIn.header) {
+            method.byIn.header = [parameter];
+            method.byIn.hasHeader = true;
+        } else {
+            parameter.notFirstByIn = true;
+            method.byIn.header.push(parameter);
+        }
+    } else if (parameter.in === 'formData') {
+        if (!method.byIn.formData) {
+            method.byIn.formData = [parameter];
+            method.byIn.hasFormData = true;
+        } else {
+            parameter.notFirstByIn = true;
+            method.byIn.formData.push(parameter);
+        }
+    }
+};
+
 var getViewForSwagger2 = function(opts) {
     var swagger = opts.swagger;
     var methods = [];
-    var authorizedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'COPY', 'HEAD', 'OPTIONS', 'LINK', 'UNLIK', 'PURGE', 'LOCK', 'UNLOCK', 'PROPFIND'];
+    var authorizedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'COPY', 'HEAD', 'OPTIONS', 'LINK', 'UNLINK', 'PURGE', 'LOCK', 'UNLOCK', 'PROPFIND'];
     var hasTags = false;
     var byTags = null;
     if (swagger.tags) {
@@ -127,6 +171,7 @@ var getViewForSwagger2 = function(opts) {
                 path: path,
                 className: opts.className,
                 methodName: methodName,
+                operationId: op.operationId,
                 tags: op.tags,
                 tagGroup: tagGroup,
                 method: M,
@@ -198,6 +243,7 @@ var getViewForSwagger2 = function(opts) {
                     parameter.isSingleton = true;
                     parameter.singleton = parameter.enum[0];
                 }
+
                 if (parameter.in === 'body') {
                     parameter.isBodyParameter = true;
                 } else if (parameter.in === 'path') {
@@ -222,43 +268,11 @@ var getViewForSwagger2 = function(opts) {
                 }
                 method.parameters.push(parameter);
                 // Indexed by 'in'
-                if (parameter.in === 'body') {
-                    if (!method.byIn.body) {
-                        method.byIn.body = [parameter];
-                        method.byIn.hasBody = true;
-                    } else {
-                        method.byIn.body.push(parameter);
-                    }
-                } else if (parameter.in === 'path') {
-                    if (!method.byIn.path) {
-                        method.byIn.path = [parameter];
-                        method.byIn.hasPath = true;
-                    } else {
-                        method.byIn.path.push(parameter);
-                    }
-                } else if (parameter.in === 'query') {
-                    if (!method.byIn.query) {
-                        method.byIn.query = [parameter];
-                        method.byIn.hasQuery = true;
-                    } else {
-                        method.byIn.query.push(parameter);
-                    }
-                } else if (parameter.in === 'header') {
-                    if (!method.byIn.header) {
-                        method.byIn.header = [parameter];
-                        method.byIn.hasHeader = true;
-                    } else {
-                        method.byIn.header.push(parameter);
-                    }
-                } else if (parameter.in === 'formData') {
-                    if (!method.byIn.formData) {
-                        method.byIn.formData = [parameter];
-                        method.byIn.hasFormData = true;
-                    } else {
-                        method.byIn.formData.push(parameter);
-                    }
-                }
+                sortParameterByIn(method, parameter);
             });
+            if (method.byIn.hasQuery && method.byIn.hasBody) {
+                method.byIn.hasQueryAndBody = true;
+            }
             if (op.responses) {
                 method.responses = [];
                 _.forEach(op.responses, function(response, r) {
@@ -284,10 +298,14 @@ var getViewForSwagger2 = function(opts) {
                 lastPath = method.path;
                 method.isFirstPath = true;
             }
+            if (data.methods.length !== 0) {
+                method.notFirstMethod = true;
+            }
             data.methods.push(method);
             if (byTags) {
                 var index = _.findIndex(byTags, function(o) { return o.name === tagGroup; });
                 if (index >= 0) {
+                    method.notFirstByTag = true;
                     byTags[index].methods.push(method);
                 } else {
                     var tagGroups = [];
@@ -332,7 +350,8 @@ var getViewForSwagger1 = function(opts) {
                 isPOST: op.method.toUpperCase() === 'POST',
                 summary: op.summary,
                 parameters: op.parameters,
-                headers: []
+                headers: [],
+                byIn: {}
             };
 
             if (op.produces) {
@@ -366,11 +385,19 @@ var getViewForSwagger1 = function(opts) {
                 } else if (parameter.paramType === 'form') {
                     parameter.isFormParameter = true;
                 }
+                // Indexed by 'in'
+                sortParameterByIn(method, parameter);
             });
+            if (method.byIn.hasQuery && method.byIn.hasBody) {
+                method.byIn.hasQueryAndBody = true;
+            }
             if (lastPath !== method.path) {
                 lastPath = method.path;
             } else {
                 method.isFirstPath = true;
+            }
+            if (data.methods.length !== 0) {
+                method.notFirstMethod = true;
             }
             data.methods.push(method);
         });

@@ -7,7 +7,7 @@ This is adapted from swagger-js-codegen, only keeping the logic that prepares th
 Installation
 
 ```sh
-npm install swagger-js-codegen
+npm install swagger-codegen-prepare
 ```
 
 ### Template Variables
