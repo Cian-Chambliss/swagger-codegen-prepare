@@ -290,7 +290,7 @@ var getViewForSwagger2 = function(opts) {
                     }
                     method.responses.push(response);
                 });
-                if (!method.returnType && opts.defaultType) {
+                if (!method.return && opts.defaultType) {
                     method.return = opts.defaultType;
                 }
             }
