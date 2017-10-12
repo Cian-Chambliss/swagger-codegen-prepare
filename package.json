@@ -1,6 +1,6 @@
 {
     "name": "swagger-codegen-prepare",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "dependencies": {
         "lodash": "^4.15.0"
     },

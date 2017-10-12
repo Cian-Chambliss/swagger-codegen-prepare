@@ -95,6 +95,8 @@ var getViewForSwagger2 = function(opts) {
         definitions: []
     };
     var lastPath = null;
+    var defTotal = 0;
+    var defWithProperty = 0;
 
     _.forEach(swagger.definitions, function(definition, name) {
         var newDef = {
@@ -108,10 +110,21 @@ var getViewForSwagger2 = function(opts) {
                 if (opts.convertType) {
                     newProp[opts.typePropertyName] = opts.convertType(propertyType, swagger, opts);
                 }
+                if (props.length > 0) {
+                    newProp.notFirst = true;
+                }
                 props.push(newProp);
             });
             newDef.properties = props;
             newDef.hasProperties = true;
+            if (defTotal > 0) {
+                newDef.notFirst = true;
+            }
+            if (defWithProperty > 0) {
+                newDef.notFirstWithProperites = true;
+            }
+            ++defTotal;
+            ++defWithProperty;
         }
         if (opts.convertType) {
             newDef[opts.typePropertyName] = opts.convertType(definition, swagger, opts);
