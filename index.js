@@ -199,7 +199,10 @@ var getViewForSwagger2 = function(opts) {
                 isSecureBasic: secureTypes.indexOf('basic') !== -1,
                 parameters: [],
                 byIn: {},
-                headers: []
+                headers: [],
+                vendor: _.pickBy(op, function(value, key) {
+                    return _.startsWith(key, "x");
+                  })
             };
             if (op.produces) {
                 method.produces = op.produces;
